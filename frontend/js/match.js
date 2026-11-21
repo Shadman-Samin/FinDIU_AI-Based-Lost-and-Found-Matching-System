@@ -6,6 +6,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const state=document.querySelector('[data-match-state]'),layout=document.querySelector('[data-match-layout]');
   const form=document.querySelector('[data-claim-form]'),claimState=document.querySelector('[data-claim-state]'),claimLink=document.querySelector('[data-claim-link]');
   const more=document.querySelector('[data-more-candidates]');
+  const openVerification=document.querySelector('[data-open-verification]'),modal=FinDIUComponents.VerificationModal(form);
+  openVerification.addEventListener('click',()=>{if(match?.can_claim&&!existing)modal.open();});
   let item,matches=[],match,existing,claims=[],offset=0,total=0;
   function render() {
     document.querySelector('[data-match-title]').textContent=item.title;
@@ -16,20 +18,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     layout.hidden=false;
     const self=match.lost.id===item.id?match.lost:match.found,other=match.lost.id===item.id?match.found:match.lost;
-    document.querySelector('[data-match-ref]').textContent=match.id.slice(0,8);
-    document.querySelector('[data-pair]').replaceChildren(itemComparison(self,'own_report'),itemComparison(other,'candidate'));
-    document.querySelector('[data-score]').textContent=score(match.score);
-    document.querySelector('[data-threshold]').textContent=formatThreshold(match.threshold);
-    document.querySelector('[data-evidence]').replaceChildren(evidence(match));
-    const clues=document.querySelector('[data-clues]');clues.replaceChildren(text('p','hint','inferred'));
-    const same=['category','color','location','event_date','brand'].filter(key=>self[key]&&self[key]!=='unknown'&&self[key]===other[key]);
-    if(same.length)same.forEach(key=>clues.append(text('span','clue',`same_${key==='event_date'?'date':key}`)));
-    else clues.append(text('span','clue','no_clues'));
+    const comparison=document.querySelector('[data-comparison]');
+    const expanded=Array.from(comparison.querySelectorAll('details')).map(node=>node.open);
+    comparison.replaceChildren(FinDIUComponents.MatchComparisonCard(match,item.id));
+    comparison.querySelectorAll('details').forEach((node,index)=>{node.open=expanded[index] || false;});
     existing=claims.find(claim=>claim.match_id===match.id);
     form.hidden=!match.can_claim||Boolean(existing);
+    openVerification.hidden=form.hidden;
     claimLink.hidden=!existing;
     claimState.textContent=existing?FinDIUI18n.t(existing.returned_at?'returned':existing.status):match.can_claim?'':FinDIUI18n.t('cannot_claim');
     if(existing?.review_note)claimState.append(el('p',null,existing.review_note));
+    if(existing)claimState.append(FinDIUComponents.StatusStepper(existing));
     const list=document.querySelector('[data-more]');
     list.replaceChildren(...matches.filter(candidate=>candidate.id!==match.id).map(candidate=>{
       const otherItem=candidate.lost.id===item.id?candidate.found:candidate.lost;
@@ -58,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const button=form.querySelector('[type=submit]');button.disabled=true;
     try {
       const result=await FinDIU.request(`/api/v1/matches/${encodeURIComponent(match.id)}/claims`,{method:'POST',body:{answer:form.elements.answer.value.trim()}});
-      claims.push({...result,match_id:match.id});match.can_claim=false;form.reset();render();toast(FinDIUI18n.t('claim_sent'));
+      claims.push({...result,match_id:match.id});match.can_claim=false;modal.close();render();toast(FinDIUI18n.t('claim_sent'));
     }catch(error){formErrors(form,error);}
     finally{button.disabled=false;}
   });

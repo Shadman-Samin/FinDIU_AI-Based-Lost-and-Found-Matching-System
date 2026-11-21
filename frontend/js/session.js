@@ -92,14 +92,17 @@
     box.append(button); node.replaceChildren(box);
   }
   function media(item) {
-    const box = el('div', 'card-media');
+    const sensitive=item.is_sensitive===true,imageURL=item.image_url,title=item.title;
+    const box = el('div', `card-media${sensitive?' sensitive-media':''}`);
+    const overlay=()=>{if(sensitive){const note=el('div','privacy-overlay');note.append(text('span',null,'sensitive_preview'));box.append(note);}};
     const placeholder = () => {
       const node = el('div', 'placeholder');
-      node.append(text('span', null, 'no_photo')); box.replaceChildren(node);
+      node.append(text('span', null, 'no_photo')); box.replaceChildren(node);overlay();
     };
-    if (item.image_url) {
-      const image = el('img'); image.src = item.image_url; image.alt = item.title || ''; image.loading = 'lazy';
-      image.addEventListener('error', placeholder, {once:true}); box.append(image);
+    if (imageURL) {
+      const image = el('img'); image.src = imageURL; image.alt = sensitive?FinDIUI18n.t('sensitive_alt'):title || ''; image.loading = 'lazy';
+      if(sensitive)image.dataset.sensitiveAlt='';
+      image.addEventListener('error', placeholder, {once:true}); box.append(image);overlay();
     } else placeholder();
     return box;
   }
@@ -113,7 +116,7 @@
     if (item.description) node.append(el('p', null, item.description));
     return node;
   }
-  function score(value) { return `${Math.round(Math.max(0, Math.min(1, Number(value) || 0)) * 100)}%`; }
+  function score(value) { return value == null ? FinDIUI18n.t('not_recorded') : `${Math.round(Math.max(0, Math.min(1, Number(value) || 0)) * 100)}%`; }
   function threshold(value) { return value == null ? FinDIUI18n.t('not_recorded') : score(value); }
   function evidence(match) {
     const data = match.evidence;
@@ -127,7 +130,7 @@
       const labelWrap = el('span');
       labelWrap.append(label);
       if (data?.weights?.[weight] != null) labelWrap.append(text('small',null,'weight',{count:Math.round(data.weights[weight]*100)}));
-      const bar = el('div','bar'), fill = el('span'); fill.style.width = score(value); bar.append(fill);
+      const bar = el('div','bar'), fill = el('span'); fill.style.width = value==null?'0%':score(value); bar.append(fill);
       row.append(labelWrap,bar,el('strong',null,score(value))); box.append(row);
     });
     if (!data || mode === 'historical') return box;
@@ -180,21 +183,27 @@
     const header = document.querySelector('[data-shell]');
     const skip = text('a','skip','skip'); skip.href = '#main';
     const brand = el('a','brand'); brand.href='index.html'; brand.setAttribute('aria-label','FinDIU');
-    brand.append(el('span','brand-mark','f'),el('span',null,'FinDIU'));
-    const nav = el('nav'); nav.setAttribute('aria-label',FinDIUI18n.t('brand'));
-    nav.append(link('dashboard','dashboard.html'));
+    const mark=el('img','brand-mark');mark.src='favicon.svg';mark.alt='';
+    const name=el('span','brand-name','FinDIU');name.append(text('span','brand-subtitle','brand'));brand.append(mark,name);
+    const nav = el('nav','primary-nav'); nav.setAttribute('aria-label',FinDIUI18n.t('brand'));
+    nav.append(link('dashboard','dashboard.html'),link('match_nav','dashboard.html#claims-heading'),link('new_report','report.html'));
+    const actions=el('div','shell-actions');
     if (FinDIU.token()) {
-      nav.append(link('new_report','report.html','nav-report'),link('admin','admin.html'));
+      actions.append(link('new_report','report.html','button nav-report'));
+      const account=el('details','account-menu');account.append(text('summary',null,'account'));const accountLinks=el('div','account-links');
+      accountLinks.append(link('admin','admin.html'));
       const out = text('button','text-button','sign_out'); out.type='button';
       out.addEventListener('click',async () => {
         if (window.findiuDirty && !await confirm('unsaved')) return;
         window.findiuDirty = false; FinDIU.clearSession(); location.href='index.html';
-      }); nav.append(out);
-    } else nav.append(link('sign_in','auth.html'));
+      }); accountLinks.append(out);account.append(accountLinks);actions.append(account);
+    } else actions.append(link('sign_in','auth.html','button'));
     const language = el('button','locale'); language.type='button'; language.dataset.localeToggle='';
-    language.addEventListener('click',FinDIUI18n.toggle); nav.append(language);
+    language.addEventListener('click',FinDIUI18n.toggle); actions.prepend(language);
     nav.querySelectorAll('a').forEach(a => { if (a.getAttribute('href') === location.pathname.split('/').pop()) a.setAttribute('aria-current','page'); });
-    header.append(skip,brand,nav);
+    if(document.body.dataset.page==='match')nav.querySelector('a[href*=claims]').setAttribute('aria-current','page');
+    const inner=el('div','shell-inner');inner.append(skip,brand,nav,actions);header.append(inner);
+    const mobile=nav.cloneNode(true);mobile.className='mobile-nav';header.after(mobile);
     const footer = document.querySelector('[data-footer]');
     footer.append(text('span',null,'footer'),text('span','meta','brand'));
     const notification=el('div','toast'); notification.dataset.toast='';notification.setAttribute('role','status'); document.body.append(notification);
@@ -213,6 +222,7 @@
       node.textContent = values.filter(Boolean).map(FinDIUI18n.label).join(' · ') + ' · ' + shortDate(date);
     });
     document.querySelectorAll('[data-clue-term]').forEach(node => { node.textContent=FinDIUI18n.label(node.dataset.clueTerm); });
+    document.querySelectorAll('[data-sensitive-alt]').forEach(node=>{node.alt=FinDIUI18n.t('sensitive_alt');});
   });
   document.addEventListener('DOMContentLoaded',shell);
 })();

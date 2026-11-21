@@ -1,33 +1,34 @@
 document.addEventListener('DOMContentLoaded', () => {
   if(!FinDIUSession.require())return;
-  const {el,text,score,threshold:formatThreshold,evidence,itemComparison,skeleton,errorState,confirm,toast}=FinDIUSession;
+  const {el,text,score,skeleton,errorState,confirm,toast}=FinDIUSession;
   const list=document.querySelector('[data-claims]'),failed=document.querySelector('[data-failed-work]');
   const prev=document.querySelector('[data-prev]'),next=document.querySelector('[data-next]'),moreWork=document.querySelector('[data-more-work]');
   const flash=document.querySelector('[data-flash]');
   let rows=[],counts={},status='pending',offset=0,total=0,generation=0,busy=false;
   let failedItems=[],failedMatches=[],itemOffset=0,matchOffset=0,itemTotal=0,matchTotal=0,workBusy=false;
-  const notes=new Map(),revealed=new Set(),statuses=['pending','approved','rejected','returned'];
+  const notes=new Map(),revealed=new Set(),expanded=new Map(),statuses=['pending','approved','rejected','returned'];
   function saveInputs() {
     list.querySelectorAll('[data-review-note]').forEach(input=>notes.set(input.dataset.reviewNote,input.value));
     list.querySelectorAll('[data-private-id]').forEach(details=>{if(details.open)revealed.add(details.dataset.privateId);else revealed.delete(details.dataset.privateId);});
+    list.querySelectorAll('.match-comparison[data-claim-id]').forEach(card=>expanded.set(card.dataset.claimId,Array.from(card.querySelectorAll('details')).map(node=>node.open)));
   }
   async function decide(claim,action,button,note) {
     if(!await confirm(action==='return'?'handover_confirm':`${action}_confirm`))return;
     button.disabled=true;
     try {
       await FinDIU.request(`/api/v1/admin/claims/${encodeURIComponent(claim.id)}${action==='return'?'/return':''}`,action==='return'?{method:'POST'}:{method:'PATCH',body:{action,review_note:note.value.trim()}});
-      notes.delete(claim.id);revealed.delete(claim.id);await load();toast(FinDIUI18n.t('decision_saved'));
+      notes.delete(claim.id);revealed.delete(claim.id);expanded.delete(claim.id);await load();toast(FinDIUI18n.t('decision_saved'));
     }catch(error){if(error.status===409)await load();toast(FinDIUI18n.errorMessage(error));button.disabled=false;}
   }
   function claimRow(claim) {
     const node=el('article','review-card'),head=el('div','review-head'),heading=el('div');
     const state=claim.returned_at?'returned':claim.status;
     heading.append(text('span',`badge badge--${state}`,state),text('h2',null,'claim_ref',{id:claim.id.slice(0,8)}),el('p','muted',`${claim.claimant.name} · ${claim.claimant.email}`));
-    const stamp=el('div','stamp');stamp.append(el('strong',null,score(claim.match.score)),text('span',null,'similarity'));head.append(heading,stamp);
+    const stamp=el('div','score-chip');stamp.append(el('strong',null,score(claim.match.score)),text('span',null,'similarity'));head.append(heading,stamp);
     const body=el('div','review-body'),pair=el('div','comparison-pair');
-    pair.append(itemComparison(claim.match.lost,'lost_label'),itemComparison(claim.match.found,'found_label'));body.append(pair);
-    body.append(evidence(claim.match));
-    const threshold=el('p','hint');threshold.append(text('span',null,'threshold'),document.createTextNode(`: ${formatThreshold(claim.match.threshold)}`));body.append(threshold);
+    const comparison=FinDIUComponents.MatchComparisonCard(claim.match,claim.match.lost.id);comparison.dataset.claimId=claim.id;
+    comparison.querySelectorAll('details').forEach((node,index)=>{node.open=expanded.get(claim.id)?.[index] ?? false;});
+    body.append(FinDIUComponents.StatusStepper(claim),comparison);
     const answer=el('div','answer-block');answer.append(text('p','eyebrow','claimant_says'),el('p',null,claim.answer));body.append(answer);
     const privateBox=el('details','private-details');privateBox.dataset.privateId=claim.id;privateBox.open=revealed.has(claim.id);
     const summary=text('summary',null,'reveal');privateBox.append(summary);

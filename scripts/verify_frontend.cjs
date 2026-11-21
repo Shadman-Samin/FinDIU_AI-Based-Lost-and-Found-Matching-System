@@ -62,6 +62,7 @@ const match = {
       }
     }
     assert.deepEqual(failures, []);
+    await page.route('**/api/v1/auth/login', route => route.fulfill({ status: 200, json: { access_token: 'fixture-token' } }));
     await page.goto(`${base}/auth.html`);
     await page.locator('[name=email]').fill('rimi@diu.edu.bd');
     await page.locator('[name=password]').fill('campus-demo-password');

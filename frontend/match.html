@@ -1,3 +1,21 @@
 <!doctype html>
-<html lang="bn"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>FinDIU | Compare</title><link rel="stylesheet" href="style.css"><script defer src="js/config.js"></script><script defer src="js/i18n.js"></script><script defer src="js/api.js"></script><script defer src="js/session.js"></script><script defer src="js/match.js"></script></head>
-<body data-page="match"><header class="topbar" data-shell></header><main id="main" class="page"><div class="page-heading"><div><p class="eyebrow" data-i18n="candidate"></p><h1 data-i18n="match_title"></h1><p class="lede" data-match-title></p></div><a href="dashboard.html" data-i18n="back"></a></div><div data-match-state></div><div class="match-layout" data-match-layout hidden><section><div class="ticket"><div class="ticket-top"><span class="eyebrow" data-i18n="match_page"></span><span class="meta" data-match-ref></span></div><div class="ticket-body"><div class="comparison-pair" data-pair></div><div data-evidence></div><div class="clue-stamps" data-clues></div></div><div class="perforation"><div class="score-summary"><div><span class="eyebrow" data-i18n="similarity"></span><p class="threshold"><span data-i18n="threshold"></span>: <strong data-threshold></strong></p></div></div><div class="stamp"><strong data-score></strong><span data-i18n="similarity"></span></div></div></div><p class="desk-note" style="margin-top:20px" data-i18n="ownership_note"></p></section><aside class="match-side"><section class="form-panel"><h2 data-i18n="verification"></h2><p class="hint" data-claim-state></p><form data-claim-form novalidate hidden><label class="field"><span data-i18n="verification"></span><textarea name="answer" required minlength="10" maxlength="1000" aria-describedby="answer-help"></textarea><span class="hint" id="answer-help" data-i18n="answer_help"></span></label><p class="form-error" data-status role="alert"></p><button type="submit" class="button" data-i18n="send_claim"></button></form><a href="dashboard.html" class="text-button" data-claim-link data-i18n="claims" hidden></a></section><section class="more-candidates"><div class="section-head"><h2 data-i18n="other_candidates"></h2></div><div data-more></div><button type="button" class="text-button" data-more-candidates data-i18n="load_more" hidden></button></section></aside></div></main><footer class="footer" data-footer></footer></body></html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#1D4ED8"><title>FinDIU | Match suggestions</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="style.css">
+  <script defer src="js/config.js"></script><script defer src="js/i18n.js"></script><script defer src="js/api.js"></script><script defer src="js/session.js"></script><script defer src="js/components.js"></script><script defer src="js/match.js"></script>
+</head>
+<body data-page="match">
+  <header class="topbar" data-shell></header>
+  <main id="main" class="page">
+    <div class="page-heading"><div><h1 data-i18n="match_title"></h1><p class="lede" data-match-title></p></div><a class="button button-light" href="dashboard.html" data-i18n="back"></a></div>
+    <div data-match-state></div>
+    <div class="match-layout" data-match-layout hidden>
+      <section data-comparison></section>
+      <div class="match-actions"><div class="claim-status"><p class="hint" data-i18n="ownership_note"></p><div data-claim-state></div><a href="dashboard.html" class="text-button" data-claim-link data-i18n="claims" hidden></a></div><button class="button" type="button" data-open-verification data-i18n="verify_ownership" hidden></button></div>
+      <section class="more-candidates"><div class="section-head"><h2 data-i18n="other_candidates"></h2></div><div data-more></div><button type="button" class="text-button" data-more-candidates data-i18n="load_more" hidden></button></section>
+    </div>
+    <form data-claim-form novalidate hidden><label class="field"><span data-i18n="verification"></span><textarea name="answer" required minlength="10" maxlength="1000" aria-describedby="answer-help"></textarea><span class="hint" id="answer-help" data-i18n="answer_help"></span></label><p class="form-error" data-status role="alert"></p><div class="actions"><button type="submit" class="button" data-i18n="send_claim"></button></div></form>
+  </main><footer class="footer" data-footer></footer>
+</body>
+</html>

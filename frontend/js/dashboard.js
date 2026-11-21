@@ -1,24 +1,15 @@
 document.addEventListener('DOMContentLoaded', () => {
   if (!FinDIUSession.require()) return;
-  const {el,text,link,shortDate,media,skeleton,errorState,confirm,toast} = FinDIUSession;
-  const list=document.querySelector('[data-my-list]'), tabs=document.querySelector('[data-tabs]'), counters=document.querySelector('[data-counters]');
+  const {el,text,link,skeleton,errorState,confirm,toast} = FinDIUSession;
+  const list=document.querySelector('[data-my-list]');
   const more=document.querySelector('[data-load-more]'), claimsNode=document.querySelector('[data-claims]'), claimsMore=document.querySelector('[data-more-claims]');
-  const search=document.querySelector('[data-search]');
-  let items=[],counts={},status='',next=null,total=0,query='',generation=0,busy=false,debounce,timer,claims=[],claimsOffset=null,claimsBusy=false;
-  const statuses=['active','reserved','returned','archived'];
+  let items=[],filters={},next=null,total=0,generation=0,busy=false,debounce,timer,claims=[],claimsOffset=null,claimsBusy=false;
+  const filterBar=FinDIUComponents.SearchFilterBar(document.querySelector('[data-search-filter]'),(values,typing)=>{
+    clearTimeout(debounce);filters=values;++generation;busy=false;next=null;more.hidden=true;more.disabled=true;
+    if(typing)debounce=setTimeout(()=>load(),300);else load();
+  });
   function card(item) {
-    const node=el('article','report-card'),body=el('div','card-body'),top=el('div','card-top');
-    top.append(text('span',`badge badge--${item.type}`,`${item.type}_label`),text('span',`badge badge--${item.status}`,item.status));
-    body.append(top,el('h3',null,item.title),el('p','card-meta',[item.category,item.color,item.brand,item.location].filter(Boolean).map(FinDIUI18n.label).join(' · ')+' · '+shortDate(item.event_date)));
-    const foot=el('div','card-foot');
-    foot.append(text('span','analysis',`analysis_${item.analysis || item.embed_status || 'pending'}`));
-    if (item.matches_count || item.analysis==='ready') {
-      const anchor=link('match_page',`match.html?id=${encodeURIComponent(item.id)}`);
-      if (item.matches_count) anchor.textContent=FinDIUI18n.t('matches_count',{count:item.matches_count});
-      foot.append(anchor);
-    }
-    body.append(foot);
-    if(item.semantic_consent&&['pending','processing','failed'].includes(item.embed_status))body.append(text('p','hint',item.embed_status==='failed'?'semantic_failed':'semantic_pending'));
+    const node=FinDIUComponents.ItemCard(item),body=node.querySelector('.card-body');
     if (item.status==='active') {
       const actions=el('div','row-actions'),archive=text('button','text-button','archive');archive.type='button';
       archive.addEventListener('click',async()=>{
@@ -29,17 +20,12 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       actions.append(link('edit',`report.html?edit=${encodeURIComponent(item.id)}`),archive);body.append(actions);
     }
-    node.append(media(item),body);return node;
+    return node;
   }
   function render() {
-    counters.replaceChildren(...statuses.map(key=>{const node=el('div','counter');node.append(el('strong',null,counts[key] ?? '—'),text('span',null,key));return node;}));
-    tabs.replaceChildren(...['',...statuses].map(key=>{
-      const button=text('button','tab',key || 'all');button.type='button';button.setAttribute('aria-pressed',String(status===key));
-      button.addEventListener('click',()=>{if(status===key)return;status=key;load();});return button;
-    }));
     document.querySelector('[data-result-count]').textContent=FinDIUI18n.t('page_count',{start:total?1:0,end:items.length,count:total});
     if (items.length) list.replaceChildren(...items.map(card));
-    else {const empty=el('div','empty');empty.append(text('h2',null,'no_reports'),text('p',null,'no_reports_copy'),link('new_report','report.html','button'));list.replaceChildren(empty);}
+    else {const empty=el('div','empty');empty.append(text('h2',null,'no_reports'),text('p',null,'no_reports_copy'));const reset=text('button','button button-light','reset_filters');reset.type='button';reset.addEventListener('click',()=>filterBar.reset());empty.append(reset,link('new_report','report.html','button'));list.replaceChildren(empty);}
     list.removeAttribute('aria-busy');more.hidden=next===null;more.disabled=false;
   }
   function schedule() {
@@ -52,11 +38,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if(!append&&!quiet)skeleton(list,3);
     const offset=append?next:0;
     const qs=new URLSearchParams({mine:'true',limit:quiet?String(Math.max(items.length,12)):'12',offset:String(offset || 0)});
-    if(status)qs.set('status',status);if(query)qs.set('q',query);
+    Object.entries(filters).forEach(([key,value])=>{if(value)qs.set(key,key==='q'?value.slice(0,80):value);});
     try {
       const data=await FinDIU.request(`/api/v1/items?${qs}`);
       if(run!==generation)return;
-      items=append?[...items,...data.items]:data.items;counts=data.counts || {};total=data.total;next=data.next_offset ?? null;render();
+      items=append?[...items,...data.items]:data.items;total=data.total;next=data.next_offset ?? null;render();
     } catch(error) {
       if(run!==generation)return;
       if(append||quiet){toast(FinDIUI18n.errorMessage(error));more.disabled=false;}
@@ -68,6 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const node=el('article','claim-lifecycle'),key=claim.returned_at?'returned':claim.status;
       const heading=el('div');heading.append(el('h3',null,FinDIUI18n.t('claim_ref',{id:claim.id.slice(0,8)})),el('p',null,shortDate(claim.created_at)));
       node.append(heading,text('span',`badge badge--${key}`,key));
+      node.append(FinDIUComponents.StatusStepper(claim));
       if(claim.review_note || claim.note)node.append(el('p','note',claim.review_note || claim.note));
       return node;
     }):[text('p','status-line','no_claims')]));
@@ -83,7 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch(error){if(append){toast(FinDIUI18n.errorMessage(error));claimsMore.disabled=false;}else errorState(claimsNode,error,()=>loadClaims());}
     finally{claimsBusy=false;}
   }
-  search.addEventListener('input',()=>{clearTimeout(debounce);debounce=setTimeout(()=>{query=search.value.trim();load();},300);});
+  FinDIU.request('/api/v1/metadata').then(data=>filterBar.setMetadata(data)).catch(error=>toast(FinDIUI18n.errorMessage(error)));
   more.addEventListener('click',()=>{if(!busy&&next!==null)load(true);});
   claimsMore.addEventListener('click',()=>loadClaims(true));
   document.addEventListener('visibilitychange',()=>{if(document.hidden)clearTimeout(timer);else if(!busy){load(false,true);loadClaims();}});

@@ -7,8 +7,25 @@ document.addEventListener('DOMContentLoaded', () => {
   const loadError = form.querySelector('[data-load-error]');
   const image = form.elements.image, preview = form.querySelector('[data-preview]'), remove = form.querySelector('[data-remove-image]');
   const consentCopy = form.querySelector('[data-i18n=consent]'), consentHelp = form.querySelector('[data-i18n=consent_help]');
-  let metadata, revision, objectURL, originalImage, removeImage = false, ready = false;
-  if (params.get('type') === 'found') form.elements.type.value = 'found';
+    let metadata, revision, objectURL, originalImage, removeImage = false, ready = false, savedItem, savedMatches=[], sidebarError;
+   if (params.get('type') === 'found') form.elements.type.value = 'found';
+   const typeButtons=document.querySelector('[data-report-type]');
+    function renderSidebar(){
+      const root=document.querySelector('[data-live-matches]');
+      if(sidebarError){FinDIUSession.errorState(root,sidebarError,()=>loadSavedMatches(editId));return;}
+      const wasOpen=root.querySelector('details')?.open;
+      const sidebar=FinDIUComponents.LiveMatchSidebar(savedItem,savedMatches);if(savedMatches.length)sidebar.open=wasOpen ?? innerWidth>=768;
+      root.replaceChildren(sidebar);document.querySelector('.report-layout').classList.toggle('has-saved-candidates',Boolean(savedMatches.length));
+    }
+    async function loadSavedMatches(id){
+      sidebarError=null;
+      try{const data=await FinDIU.request(`/api/v1/items/${encodeURIComponent(id)}/matches?limit=5`);savedMatches=data.matches;}
+      catch(error){sidebarError=error;}
+      renderSidebar();
+    }
+   function renderType(){typeButtons.querySelectorAll('button').forEach(button=>{button.setAttribute('aria-pressed',String(button.dataset.type===form.elements.type.value));button.disabled=Boolean(editId);});}
+   typeButtons.addEventListener('click',event=>{const button=event.target.closest('[data-type]');if(!button||editId)return;form.elements.type.value=button.dataset.type;renderType();dirty();});
+   renderType();renderSidebar();
   const dateInDhaka = (offset = 0) => {
     const now = new Date(Date.now() - offset * 86400000);
     const parts = new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Dhaka',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(now);
@@ -43,7 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     FinDIUI18n.render(form);
   }
-  document.addEventListener('languagechange',renderOptions);
+   document.addEventListener('languagechange',()=>{renderOptions();renderType();renderSidebar();});
   function clearObjectURL() { if (objectURL) {URL.revokeObjectURL(objectURL);objectURL=null;} }
   image.addEventListener('change', () => {
     clearObjectURL();
@@ -71,9 +88,11 @@ document.addEventListener('DOMContentLoaded', () => {
         form.elements.type.disabled=true;
         originalImage=item.image_url;
         if (originalImage) {preview.src=originalImage;preview.hidden=false;remove.hidden=false;}
-        if (item.status!=='active') throw {status:409,payload:{error:{code:'lifecycle_conflict'}}};
-      }
-      ready=true;renderOptions();submit.disabled=false;
+         if (item.status!=='active') throw {status:409,payload:{error:{code:'lifecycle_conflict'}}};
+          savedItem={id:item.id};
+          await loadSavedMatches(editId);
+       }
+       ready=true;renderOptions();renderType();renderSidebar();submit.disabled=false;
     } catch(error) {
       loadError.append(el('p',null,FinDIUI18n.errorMessage(error)));
       const retry=text('button','text-button','retry');retry.type='button';retry.addEventListener('click',load);loadError.append(retry);
