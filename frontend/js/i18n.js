@@ -20,7 +20,7 @@
   const labels = {unknown:["Unknown","অজানা"],bag:["Bag","ব্যাগ"],wallet:["Wallet","মানিব্যাগ"],phone:["Phone","মোবাইল ফোন"],keys:["Keys","চাবি"],"id-card":["ID card","আইডি কার্ড"],books:["Books","বই"],electronics:["Electronics","ইলেকট্রনিক্স"],clothing:["Clothing","পোশাক"],other:["Other","অন্যান্য"],black:["Black","কালো"],white:["White","সাদা"],blue:["Blue","নীল"],red:["Red","লাল"],green:["Green","সবুজ"],yellow:["Yellow","হলুদ"],grey:["Grey","ধূসর"],brown:["Brown","বাদামি"],pink:["Pink","গোলাপি"],library:["Library","লাইব্রেরি"],classroom:["Classroom","ক্লাসরুম"],cafeteria:["Cafeteria","ক্যাফেটেরিয়া"],transport:["Transport","পরিবহন"],mosque:["Mosque","মসজিদ"],ground:["Ground","খেলার মাঠ"]};
   Object.assign(copy, {
     home_title: ['Lost or found on campus?','ক্যাম্পাসে কিছু হারিয়েছেন বা পেয়েছেন?'],
-    home_intro: ['Choose a task. Sign in to publish a report and follow saved matches.','কাজ বেছে নিন। রিপোর্ট প্রকাশ ও সংরক্ষিত মিল দেখতে লগইন করুন।'],
+    home_intro: ['Choose a task. Publish a report and follow saved matches.','কাজ বেছে নিন। রিপোর্ট প্রকাশ করুন ও সংরক্ষিত মিল দেখুন।'],
     dashboard_title: ['Your campus report board','আপনার ক্যাম্পাস রিপোর্ট বোর্ড'],
     dashboard_intro: ['Search your own reports in English or বাংলা. Compare saved candidates and track your claims.','ইংরেজি বা বাংলায় নিজের রিপোর্ট খুঁজুন। সংরক্ষিত মিল তুলনা করুন ও দাবির অগ্রগতি দেখুন।'],
     report_title: ['Report an item','জিনিসের রিপোর্ট করুন'],

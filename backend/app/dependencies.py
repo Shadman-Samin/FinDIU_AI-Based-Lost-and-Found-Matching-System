@@ -1,4 +1,6 @@
 from fastapi import Depends, Request
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from backend.app.auth import decode_token
@@ -6,9 +8,35 @@ from backend.app.db import get_session
 from backend.app.errors import AppError
 from backend.app.models import Role, User
 
+DEMO_EMAIL = "demo@findiu.local"
+
+
+def _demo_user(session: Session) -> User:
+    # Login is temporarily disabled; requests without a token share one demo account.
+    user = session.scalar(select(User).where(User.email == DEMO_EMAIL))
+    if user is None:
+        user = User(
+            name="Demo user",
+            email=DEMO_EMAIL,
+            password_hash="!disabled",
+            role=Role.ADMIN,
+            locale="en",
+        )
+        session.add(user)
+        try:
+            session.commit()
+        except IntegrityError:
+            session.rollback()
+            user = session.scalar(select(User).where(User.email == DEMO_EMAIL))
+            if user is None:
+                raise
+    return user
+
 
 def get_current_user(request: Request, session: Session = Depends(get_session)) -> User:
     header = request.headers.get("authorization", "")
+    if not header.strip() and getattr(request.app.state.settings, "demo_mode", False):
+        return _demo_user(session)
     scheme, _, token = header.partition(" ")
     if scheme.lower() != "bearer" or not token:
         raise AppError(401, "unauthorized", "Please sign in again.")

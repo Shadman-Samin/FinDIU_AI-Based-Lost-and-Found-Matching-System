@@ -48,6 +48,7 @@ def app_settings(migrated_database: str, tmp_path):
         _env_file=None,
         database_url=migrated_database,
         jwt_secret=TEST_SECRET,
+        demo_mode=False,
         upload_dir=str(tmp_path / "uploads"),
         public_base_url="http://testserver",
         embedding_provider="local",

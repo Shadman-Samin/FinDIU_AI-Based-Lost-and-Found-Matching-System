@@ -1,8 +1,7 @@
 (function () {
   function require() {
-    if (FinDIU.token()) return true;
-    location.replace(`auth.html?next=${encodeURIComponent(location.pathname.split('/').pop() + location.search)}`);
-    return false;
+    // Login is temporarily disabled; all pages are open.
+    return true;
   }
   function el(tag, className, text) {
     const node = document.createElement(tag);
@@ -188,16 +187,8 @@
     const nav = el('nav','primary-nav'); nav.setAttribute('aria-label',FinDIUI18n.t('brand'));
     nav.append(link('dashboard','dashboard.html'),link('match_nav','dashboard.html#claims-heading'),link('new_report','report.html'));
     const actions=el('div','shell-actions');
-    if (FinDIU.token()) {
-      actions.append(link('new_report','report.html','button nav-report'));
-      const account=el('details','account-menu');account.append(text('summary',null,'account'));const accountLinks=el('div','account-links');
-      accountLinks.append(link('admin','admin.html'));
-      const out = text('button','text-button','sign_out'); out.type='button';
-      out.addEventListener('click',async () => {
-        if (window.findiuDirty && !await confirm('unsaved')) return;
-        window.findiuDirty = false; FinDIU.clearSession(); location.href='index.html';
-      }); accountLinks.append(out);account.append(accountLinks);actions.append(account);
-    } else actions.append(link('sign_in','auth.html','button'));
+    actions.append(link('new_report','report.html','button nav-report'));
+    actions.append(link('admin','admin.html','button button-light'));
     const language = el('button','locale'); language.type='button'; language.dataset.localeToggle='';
     language.addEventListener('click',FinDIUI18n.toggle); actions.prepend(language);
     nav.querySelectorAll('a').forEach(a => { if (a.getAttribute('href') === location.pathname.split('/').pop()) a.setAttribute('aria-current','page'); });

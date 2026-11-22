@@ -10,6 +10,7 @@ def make_settings(**overrides):
         database_url="postgresql+psycopg://unused:unused@127.0.0.1:1/findiu_dev",
         jwt_secret="test-only-secret-with-at-least-32-characters",
         storage_provider="local",
+        demo_mode=False,
         **overrides,
     )
 

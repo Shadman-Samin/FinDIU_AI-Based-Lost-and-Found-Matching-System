@@ -2,7 +2,7 @@
   const tokenKey = "findiu_access_token";
 
   function token() {
-    return sessionStorage.getItem(tokenKey);
+    return null;
   }
 
   function clearSession() {
@@ -12,8 +12,6 @@
 
   async function request(path, options = {}) {
     const headers = new Headers(options.headers || {});
-    const accessToken = token();
-    if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
     if (!(options.body instanceof FormData) && options.body !== undefined) {
       headers.set("Content-Type", "application/json");
       options.body = JSON.stringify(options.body);
@@ -25,14 +23,6 @@
         ...options, headers, signal: controller.signal
       });
       const data = await response.json().catch(() => ({}));
-      if (response.status === 401) {
-        const hadSession = Boolean(token());
-        clearSession();
-        if (hadSession && !location.pathname.endsWith("auth.html")) {
-          const next = encodeURIComponent(location.pathname.split("/").pop() + location.search);
-          location.replace(`auth.html?next=${next}`);
-        }
-      }
       if (!response.ok) {
         const error = new Error(data.error?.message || "Something went wrong.");
         error.status = response.status;

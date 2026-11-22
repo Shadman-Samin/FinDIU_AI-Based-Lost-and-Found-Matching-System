@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     public_base_url: str = "http://localhost:8000"
     upload_dir: str = "var/uploads"
     consent_version: str = "2026-11-19-local-hybrid"
+    demo_mode: bool = True
     login_limit: int = 5
     registration_limit: int = 3
     report_limit: int = 10
